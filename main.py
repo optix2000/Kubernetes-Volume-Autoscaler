@@ -11,6 +11,7 @@ import sys, traceback
 # Initialize our Prometheus metrics (counters)
 PROMETHEUS_METRICS = {}
 PROMETHEUS_METRICS['resize_evaluated']  = Counter('volume_autoscaler_resize_evaluated',  'Counter which is increased every time we evaluate resizing PVCs')
+PROMETHEUS_METRICS['resize_error'] = Counter('volume_autoscaler_resize_error',  'Counter which is increased every time we encounter an error evaluating resizing PVCs')
 PROMETHEUS_METRICS['resize_attempted']  = Counter('volume_autoscaler_resize_attempted',  'Counter which is increased every time we attempt to resize')
 PROMETHEUS_METRICS['resize_successful'] = Counter('volume_autoscaler_resize_successful', 'Counter which is increased every time we successfully resize')
 PROMETHEUS_METRICS['resize_failure']    = Counter('volume_autoscaler_resize_failure',    'Counter which is increased every time we fail to resize')
@@ -172,6 +173,7 @@ if __name__ == "__main__":
 
                 # If our resize bytes failed for some reason, eg putting invalid data into the annotations on the PV
                 if resize_to_bytes == False:
+                    PROMETHEUS_METRICS['resize_error'].inc()
                     print("-------------------------------------------------------------------------------------------------------------")
                     print("  Error/Exception while trying to determine what to resize to, volume causing failure:")
                     print("-------------------------------------------------------------------------------------------------------------")
@@ -181,6 +183,7 @@ if __name__ == "__main__":
 
                 # If our resize bytes is less than our original size (because the user set the max-bytes to something too low)
                 if resize_to_bytes < pvcs_in_kubernetes[volume_description]['volume_size_status_bytes']:
+                    PROMETHEUS_METRICS['resize_error'].inc()
                     print("-------------------------------------------------------------------------------------------------------------")
                     print("  Error/Exception while trying to scale this up.  Is it possible your maximum SCALE_UP_MAX_SIZE is too small?")
                     print("-------------------------------------------------------------------------------------------------------------")
